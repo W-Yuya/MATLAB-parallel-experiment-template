@@ -210,4 +210,4 @@ pm.sendFinish();
 |ビジュアライズ|	Web	|`progress_view/index.html`|
 |サーバー起動|	Windows|	'run_server.bat'|
 
-このテンプレートを導入すれば、
+このテンプレートを導入すれば、parforをビジュアル的に監視できます．
