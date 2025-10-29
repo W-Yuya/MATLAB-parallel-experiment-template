@@ -2,36 +2,35 @@
 setlocal
 
 IF "%~1"=="" (
-    ECHO ã‚¨ãƒ©ãƒ¼: å®Ÿè¡Œã—ãŸã„ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’æŒ‡å®šã—ã¦ãã ã•ã„ã€‚
-    ECHO ä¾‹: run_server.bat C:\Your\Project\Directory
+    ECHO ƒGƒ‰[: ŽÀs‚µ‚½‚¢ƒfƒBƒŒƒNƒgƒŠ‚ðŽw’è‚µ‚Ä‚­‚¾‚³‚¢B
+    ECHO —á: run_server.bat C:\Your\Project\Directory
     GOTO :EOF
 )
 
 SET TARGET_DIR=%~1
 
 IF NOT EXIST "%TARGET_DIR%" (
-    ECHO ã‚¨ãƒ©ãƒ¼: æŒ‡å®šã•ã‚ŒãŸãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª "%TARGET_DIR%" ã¯å­˜åœ¨ã—ã¾ã›ã‚“ã€‚
+    ECHO ƒGƒ‰[: Žw’è‚³‚ê‚½ƒfƒBƒŒƒNƒgƒŠ "%TARGET_DIR%" ‚Í‘¶Ý‚µ‚Ü‚¹‚ñB
     GOTO :EOF
 )
 
 CD "%TARGET_DIR%"
 
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ã‚¨ãƒ©ãƒ¼: ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª "%TARGET_DIR%" ã¸ã®ç§»å‹•ã«å¤±æ•—ã—ã¾ã—ãŸã€‚
+    ECHO ƒGƒ‰[: ƒfƒBƒŒƒNƒgƒŠ "%TARGET_DIR%" ‚Ö‚ÌˆÚ“®‚ÉŽ¸”s‚µ‚Ü‚µ‚½B
     GOTO :EOF
 )
 
-ECHO ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’ "%CD%" ã«å¤‰æ›´ã—ã¾ã—ãŸã€‚
+ECHO ƒfƒBƒŒƒNƒgƒŠ‚ð "%CD%" ‚É•ÏX‚µ‚Ü‚µ‚½B
 
-call venv\Scripts\activate
-IF %ERRORLEVEL% NEQ 0 (
-    ECHO ã‚¨ãƒ©ãƒ¼: ä»®æƒ³ç’°å¢ƒã®ã‚¢ã‚¯ãƒ†ã‚£ãƒ™ãƒ¼ãƒˆã«å¤±æ•—ã—ã¾ã—ãŸã€‚
+IF NOT EXIST ".\venv\Scripts\python.exe" (
+    ECHO ƒGƒ‰[: ‰¼‘zŠÂ‹«‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½ B
     GOTO :EOF
 )
 
-python server.py
+.\venv\Scripts\python.exe server.py
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ã‚¨ãƒ©ãƒ¼: server.py ã®å®Ÿè¡Œã«å¤±æ•—ã—ã¾ã—ãŸã€‚
+    ECHO ƒGƒ‰[: server.py ‚ÌŽÀs‚ÉŽ¸”s‚µ‚Ü‚µ‚½B
     GOTO :EOF
 )
 

@@ -12,7 +12,7 @@ debug_flag = true;
 view_waitbar = true;
 view_browser = true;
 
-% --- サーバー/ブラウザ設定 ---
+% --- 実験ディレクトリ設定 ---
 startServerDir = string(pwd); % このファイルのディレクトリを取得
 serverLauncherBat  = "run_server.bat";
 htmlFileName       = "progress_view\index.html";
