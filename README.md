@@ -2,6 +2,13 @@
 
 並列数値実験の進捗をブラウザで可視化するテンプレート
 
+- ブラウザ表示
+<img width="3874" height="2475" alt="web_sample" src="https://github.com/user-attachments/assets/b7deacff-6a2d-4991-adc5-a7ffda78ecbb" />
+
+- プログレスバーの表示
+<img width="541" height="159" alt="waitbar_sample" src="https://github.com/user-attachments/assets/31d40e47-34bc-4f5f-88a3-a432f286dcf3" />
+
+
 ## 🌟 概要
 
 このリポジトリは、MATLAB の Parallel Computing Toolbox を用いた
@@ -125,7 +132,7 @@ debug_flag = true;
 view_waitbar = true;
 view_browser = true;
 
-% --- サーバー/ブラウザ設定 ---
+% --- 実験ディレクトリ設定 ---
 startServerDir = string(pwd); % このファイルのディレクトリを取得
 serverLauncherBat  = "run_server.bat";
 htmlFileName       = "progress_view\index.html";
