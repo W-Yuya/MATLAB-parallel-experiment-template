@@ -1,121 +1,213 @@
-# 📘 `ProgressManager` クラス — 並列実験の進捗管理ツール
-## 概要
-`ProgressManager` は、MATLAB の並列実験（parfor など）における進捗状況を
-リアルタイムで可視化・通知するための統合管理クラスです。
+# 🧩 MATLAB Parallel Experiment Template
 
-主な機能：
-- waitbar による進捗表示
-- TCP 通信による Web サーバーへの進捗通知
-- 実験完了・中断時の自動処理
-- 並列処理 (parfor) との安全な連携
+並列数値実験の進捗をブラウザで可視化するテンプレート
 
-## 🔧 ファイル構成
+## 🌟 概要
+
+このリポジトリは、MATLAB の Parallel Computing Toolbox を用いた
+並列数値実験の進捗をリアルタイムで可視化するテンプレートです。
+
+最新版（R2025以降）では MATLAB 純正の[タスクビジュアライザ](https://jp.mathworks.com/help/simulink/slref/simulationmanager.html)が使える(?)ようですが、
+R2022a では標準機能が不十分だったため、
+Pythonサーバー＋ブラウザ表示で可視化する仕組みを作っています。
+
+Simulink は…知りません（使えない）
+
+## 💡 コンセプト
+
+- 並列実験の進行状況をリアルタイムでブラウザ表示
+- MATLAB のリソースを極力数値実験に集中（サーバー処理はPythonに委譲）
+- シンプルな導入（`parallel/` フォルダをプロジェクトに追加するだけ）
+- R2022aで動作確認済み
+
+## ⚙️ 環境・前提
+
+基本的には 並列クラスタのホストコンピュータ上での使用を想定しています。
+
 ```
-project_root/
-├─ main.m                % 実験スクリプト
-├─ parallel/
-│   ├─ ProgressManager.m % 本体クラス
-│   ├─ parallel_config.m % 設定ファイル（環境依存値をまとめる）
-│   ├─ run_server.bat    % サーバー起動用バッチ
-│   └─ progress_view/
-│       └─ index.html    % ブラウザ表示用UI
+MATLAB:
+  R2022a
+  Parallel Computing Toolbox
+
+Python:
+  3.11
+
+OS：Windows のみ動作確認済み
+```
+MATLABはバージョンが違っても動くと思います。\
+Pythonは...頑張ってください。\
+※Pythonバージョンを指定した仮想環境の作成は[こちら](https://maku77.github.io/p/wozpogm/#:~:text=(.venv)%20%24%20deactivate-,%E7%89%B9%E5%AE%9A%E3%81%AE%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E3%81%AE%20Python%20%E3%82%92%E4%BD%BF%E3%81%86%E4%BB%AE%E6%83%B3%E7%92%B0%E5%A2%83%E3%82%92%E4%BD%9C%E6%88%90%E3%81%99%E3%82%8B,-venv%20%E7%92%B0%E5%A2%83%E5%86%85)が参考になります。
+
+## 🧠 システム構成
+
+このテンプレートは以下の3層構造になっています：
+
+`Matlab → Pythonサーバー → HTMLブラウザ表示`
+
+|層	|役割|
+|---|----|
+|MATLAB|	数値実験本体。進捗をPythonサーバーに通知|
+|Python|	進捗情報を受け取り、整形してWeb配信|
+|HTML|	ブラウザ上で進捗をリアルタイム可視化|
+
+### 📁 ファイル構成
+
+`parallel/`フォルダが本システムの中核です。
+
+```
+parallel/
+├ venv/                # Python用仮想環境
+├ progress_view/       # ブラウザ表示用HTML群
+│   ├ index.html
+│   ├ script.js
+│   └ style.css
+├ parallel_config.m    # ProgressManagerの設定ファイル
+├ ProgressManager.m    # 進捗管理クラス (MATLAB側メイン)
+├ run_server.bat       # サーバー起動スクリプト
+└ server.py            # Pythonローカルサーバー
 ```
 
-## 🚀 基本的な使い方
+これらを以下のように配置しています：
 ```
-clc; close all; clear;
+experiment_root/
+├ parallel/   # 本システム
+├ src/        # 実験スクリプト群
+└ main.m      # 実験のメインスクリプト
+```
 
-% === path追加（parallelディレクトリへのパス） ===
-addpath("./parallel/");
-
-% === 実験数の設定 ===
-num_experiment = 100;  % 並列実験の総数
-
-% === ProgressManagerの初期化 ===
-pm = ProgressManager(num_experiment);
-
-% === 並列実験 ===
-parfor expID = 1:num_experiment
-    % 実験処理
-    pause(0.1);  % （例）処理の代わりに遅延
+### 💡 補足:
+<details>
+<summary>なぜこんな構成にしたのか</summary>
+MATLAB 側の計算リソースを圧迫しないよう、
+Python が Web サーバーを立てて表示を担当します（本当にメモリ効率がいいのかは不明）。
     
-    % 進捗更新
-    pm.sendProgress(expID);
-end
+つまるところ、ビジュアライズ専用ノード（ホストマシン）などで実行する場合は
+MATLAB 内で完結させた方が無難です。
+</details>
 
-% === バッファを強制送信 ===
-pm.flush();
+## 📊 ProgressManager クラスについて
 
-% === 実験終了通知 ===
-pm.sendFinish();
+`parallel/ProgressManager.m` は、
+実験進捗とTCP通信を一元管理する中核クラスです。
+
+- 主な機能
+  - waitbar による進捗バー表示（オプション）
+  - Python サーバーへの TCP 通信
+  - 実験完了・中断時の自動処理
+  - parfor 対応（DataQueue 経由）
+- 主なメソッド一覧
+
+|メソッド名|概要|
+|---------|----|
+|`ProgressManager(numExp, [configFile, rootDir])`|	コンストラクタ。実験数とコンフィグファイルのパス，ルートディレクトリを指定（省略可）|
+|`sendInit()`|	サーバーに初期化通知を送信（通常自動）|
+|`sendProgress(expID)`|	実験進捗を1件追加（parfor 内で呼ぶ）|
+|`flush()`|	バッファを即時送信|
+|`sendFinish()`|	全実験完了を通知し、UIを閉じる|
+
+### ⚙️ 設定ファイル：parallel_config.m
+
+環境依存の設定はすべてここにまとめられています。
+
+**設定例**
 ```
-
-## ⚙️ parallel_config.m の役割と設定内容
-
-`parallel_config.m` は、環境に依存するパラメータを集中管理する設定ファイルです。
-このファイルを編集することで、他プロジェクトや他マシンでも簡単に流用できます。
-
-### 設定例
-```
-% parallel_config.m
-cfg = struct();
+%% parallel_config.m
+% ProgressManager 用の設定ファイル
 
 % --- 通信設定 ---
-cfg.serverIP   = "127.0.0.1";
-cfg.serverPort = 12345;
-cfg.sendInterval = 1.0;     % [秒] サーバー送信間隔
-cfg.bufferLimit = 10;       % バッファ送信閾値
+serverIP = "127.0.0.1";
+serverPort = 12345;
+sendInterval = 1;  % 秒
+bufferLimit = 10;
 
 % --- 表示設定 ---
-cfg.debug_flag    = true;   % 標準出力を表示
-cfg.view_waitbar  = true;   % MATLAB waitbarを表示
-cfg.view_browser  = true;   % サーバーとブラウザを起動
+debug_flag = true;
+view_waitbar = true;
+view_browser = true;
 
-% --- 実験ディレクトリ設定 ---
-cfg.startServerDirName = "parallel";
-cfg.serverLauncherBat  = "run_server.bat";
-cfg.htmlFileName       = "progress_view/index.html";
+% --- サーバー/ブラウザ設定 ---
+startServerDir = string(pwd); % このファイルのディレクトリを取得
+serverLauncherBat  = "run_server.bat";
+htmlFileName       = "progress_view\index.html";
+experimentRootDir = fileparts(startServerDir);
 ```
 
 ### 自動読み込み
 
-`ProgressManager` は初期化時に `parallel_config.m`を自動で読み込み、
-上記の設定を内部に反映します。
+`ProgressManager` 初期化時に自動で読み込まれ、
+環境に応じた設定を自動反映します。
 
-そのため、通常は `ProgressManager(num_experiment)` の1行だけで動作します。
+通常は `ProgressManager(num_experiment)` の1行でOKです。
 
-## 🧩 主なメソッド
+## 🧩 テンプレート（本リポジトリ）の使い方
 
-|メソッド名|概要|
-|---------|----|
-|`ProgressManager(numExp, [rootDir])`| コンストラクタ。実験数とルートディレクトリを指定（省略時は実行位置）。|
-|`sendInit()`| 初期化メッセージをサーバーに送信（通常は自動呼び出し）。|
-|`sendProgress(expID, [workerID])`| 実験の進捗を1件追加。parfor 内で呼び出す。|
-|`flush()` | バッファに溜まった進捗データをサーバーへ強制送信。|
-|`sendFinish()`| 全実験終了通知。waitbarも自動で閉じる。|
+このテンプレートでは、KLNMF を用いて観測行列を基底・係数に分解し、
+指定回数反復した後のコスト関数を記録するサンプルを実装しています。
 
-## 💡 Tips / 注意点
+### 💻 テンプレート構成
+```
+experiment_root/
+├ parallel/   # 本システム
+│   └ ProgressManager.m
+├ src/        # 実験本体のスクリプト群
+│   └ experiment_manager.m
+└ main.m      # 実験設定・呼び出し
+```
 
-- parfor 内で直接TCP送信しない\
-  → sendProgress は DataQueue 経由で安全に非同期送信されます。
-- Webブラウザを開きたくない場合\
-  → parallel_config.m 内で cfg.view_browser = false に設定。
-- waitbar非表示で軽量化したい場合\
-  → cfg.view_waitbar = false に設定。
-- 標準出力を抑制したい場合\
-  → cfg.debug_flag = false に設定。
-- 異なる環境での実行\
-  → バッチファイル (run_server.bat) とポート番号 (serverPort) を環境に合わせて変更。
+### `main.m`
+
+実験条件・データセットの設定など、事前処理を行います。
+
+```
+% pathの追加
+addpath("./src/", "./parallel/")
+```
+
+重要なのはこの`addpath`で、`main.m`から両フォルダの `.m` ファイルを呼び出せるようになります。
+
+### `experiment_manager.m`
+
+実験を管理・進捗送信を行う中心スクリプトです。
+
+`ProgressManager`クラスに関する記述
+
+**初期化**
+```
+% num_experiment : 実験条件の総数
+pm = ProgressManager(num_experiment);
+```
+
+**進捗更新とバッファ送信**
+```
+parfor expID = 1:num_experiment
+    % ## 実験処理
+    pm.sendProgress(expID); % 進捗更新
+end
+pm.flush(); % 残りのバッファを送信
+```
+
+**実験終了通知**
+```
+pm.sendFinish();
+```
+
+### 💬 ProgressManagerTips
+- waitbar を非表示にする\
+  → `view_waitbar = false;`
+- ブラウザを開かない\
+  → `view_browser = false;`
+- 標準出力を抑制\
+  → `debug_flag = false;`
+- ポート変更\
+  → `serverPort = 任意の値;`
 
 ## 🧭 まとめ
-| 機能	| 対応箇所 |
-|-------|---------|
-|Web進捗表示|`progress_view/index.html`|
-|TCP通信|	`serverIP`, `serverPort`, `sendInterval`|
-|バッファ管理|	`bufferLimit`, `flush()`|
-|ローカル表示|	`waitbar`, `debug_flag`|
-|設定管理|	`parallel_config.m`|
+|機能    |    担当    |	ファイル    |
+|--------|-----------|--------------|
+|進捗管理|	MATLAB	|`ProgressManager.m|
+|設定管理|	MATLAB	|`parallel_config.m|
+|ローカルサーバー|	Python	| `server.py`|
+|ビジュアライズ|	Web	|`progress_view/index.html`|
+|サーバー起動|	Windows|	'run_server.bat'|
 
-必要に応じて、`ProgressManager` はそのまま他の実験スクリプトに再利用可能です。
-
-`parallel_config.m` だけを環境に合わせて更新すれば、追加設定なしで動作します。
+このテンプレートを導入すれば、
