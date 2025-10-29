@@ -210,4 +210,5 @@ pm.sendFinish();
 |ビジュアライズ|	Web	|`progress_view/index.html`|
 |サーバー起動|	Windows|	'run_server.bat'|
 
-このテンプレートを導入すれば、parforをビジュアル的に監視できます．
+このテンプレートを導入すれば、parforをビジュアル的に監視できます。\
+Pythonサーバーやweb側は適当なので、使いやすいように変更してみてください。
