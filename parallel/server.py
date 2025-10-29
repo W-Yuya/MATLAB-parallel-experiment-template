@@ -4,6 +4,7 @@ import time
 import os
 import signal
 import json
+import re
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -124,6 +125,9 @@ def handle_client(conn, addr):
                         elif msg_type == 'PROGRESS':
                             task_id = message.get('task_id')
                             worker_id = message.get('worker_id', 'unknown') # ワーカーIDがない場合を考慮
+
+                            # ワーカーIDの成形(Venus1 -> Venus01, グラフで整列させるため)
+                            worker_id = format_with_zero_padding(worker_id)
                             
                             if task_id is not None:
                                 received_indices.add(task_id)
@@ -198,6 +202,33 @@ def start_server():
                 print(f"TCPサーバーでエラーが発生しました: {e}")
                 # エラーが繰り返し発生する場合は、ここで終了するか再試行するかを検討
                 break
+
+def format_with_zero_padding(input_string):
+    """
+    文字列の末尾にある数字を識別し、1桁の数字であれば2桁にゼロパディングします。
+    """
+    # 正規表現パターン:
+    # 1. (.*?)  : 任意の文字が0回以上続く（非貪欲マッチ）。接頭辞（例: Venus, Worker）をキャプチャグループ1とする。
+    # 2. (\d{1,2}) : 1桁または2桁の数字にマッチ。数字部分をキャプチャグループ2とする。
+    # 3. $      : 文字列の末尾を示す。
+    pattern = r'(.*?)(\d{1,2})$'
+    
+    match = re.match(pattern, input_string)
+    
+    if match:
+        print(f"ここ：{match.group(1)} + {match.group(2)}")
+        prefix = match.group(1) # 例: 'Venus'
+        number_str = match.group(2) # 例: '1', '12'
+        number = int(number_str)
+
+        # 数字を2桁にゼロパディングする（例: 1 -> '01', 12 -> '12'）
+        # f-string の :02d 形式で実現
+        padded_number = f'{number:02d}'
+        
+        return prefix + padded_number
+    else:
+        # パターンにマッチしない場合は、元の文字列をそのまま返す
+        return input_string
 
 if __name__ == "__main__":
     start_server()

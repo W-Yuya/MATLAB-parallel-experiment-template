@@ -265,7 +265,7 @@ function wid_str = getCurrentWorkerId()
     if isempty(w)
         wid_str = 'unknown';
     elseif isa(w, 'parallel.cluster.MJSWorker') % Venus上
-        wid_str = w.Name; % ワーカー名 (例: 'Worker 1', 'Worker 2')
+        wid_str = w.Host; % ワーカー名 (例: 'Venus1', 'Venus2')
     elseif isa(c, 'parallel.cluster.CJSWorker') % ローカル
         wid_str = string(w.ProcessId);
     else % 2022では到達しないはず．
